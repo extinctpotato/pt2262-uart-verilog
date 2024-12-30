@@ -36,7 +36,6 @@ module top(
 	output led_b
 );
 	assign led_g = 1;
-	//assign led_b = 1;
 	
 	wire clk_10khz;
 	SB_LFOSC u_lfosc (
@@ -47,16 +46,20 @@ module top(
 
 	wire clk_div;
 
-	clk_div_n clk0 (
+	clk_div_n #( .WIDTH(16)) clk0 (
 		.clk(clk_10khz),
 		.reset(1'b0),
-		.div_num(256),
+		.div_num(4056),
 		.clk_out(clk_div)
 	);
+
+	wire out;
+	assign led_r = ~out;
+	assign led_b = ~clk_div;
 
 	cb_gen c0 (
 		.clk(clk_div),
 		.state(1'bz),
-		.q(led_r)
+		.q(out)
 	);
 endmodule
