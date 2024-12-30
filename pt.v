@@ -1,6 +1,6 @@
 module cb_gen(
 	input clk,
-	input state,
+	input [1:0] state,
 	output q
 );
 	reg [31:0] zero = 32'b11110000000000001111000000000000;
@@ -13,9 +13,9 @@ module cb_gen(
 
 	always @(state) begin
 		case (state)
-			1'b0 : mux <= zero;
-			1'b1 : mux <= one;
-			1'bz : mux <= hi_z;
+			2'b00 : mux <= zero;
+			2'b01 : mux <= one;
+			2'b10 : mux <= hi_z;
 		endcase
 	end
 

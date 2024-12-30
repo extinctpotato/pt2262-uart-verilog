@@ -59,7 +59,7 @@ module top(
 
 	cb_gen c0 (
 		.clk(clk_div),
-		.state(1'bz),
+		.state(2'b10),
 		.q(out)
 	);
 endmodule

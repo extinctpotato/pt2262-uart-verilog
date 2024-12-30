@@ -2,7 +2,7 @@
 
 module pt_tb();
 	reg clk;
-	reg state;
+	reg [1:0] state;
 	wire q;
 
 	initial begin
@@ -10,10 +10,10 @@ module pt_tb();
 		$dumpvars(0, c0);
 		$display("Running testbench for pt module.");
 		clk = 0;
-		#1 state = 1'b0;
-		#64 state = 1'b1;
-		#64 state = 1'bz;
-		#64 state = 1'b0;
+		#1 state = 2'b00;
+		#64 state = 2'b01;
+		#64 state = 2'b10;
+		#64 state = 2'b00;
 		#128 $finish;
 	end
 
