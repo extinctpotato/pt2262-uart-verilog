@@ -13,7 +13,8 @@ module pt_tb();
 		#1 state = 1'b0;
 		#64 state = 1'b1;
 		#64 state = 1'bz;
-		#64 $finish;
+		#64 state = 1'b0;
+		#128 $finish;
 	end
 
 	always begin
