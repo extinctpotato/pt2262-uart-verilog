@@ -22,3 +22,21 @@ module cb_gen(
 	always @(posedge clk)
 		ctr <= ctr - 1;
 endmodule
+
+module sb_gen(
+	input clk,
+	input rst,
+	output q
+);
+	reg [6:0] ctr = 127;
+	wire drive_high = (ctr < 5);
+	assign q = drive_high;
+
+	always @(posedge clk)
+	begin
+		if (rst)
+			ctr <= 127;
+		else
+			ctr <= ctr + 1;
+	end
+endmodule
