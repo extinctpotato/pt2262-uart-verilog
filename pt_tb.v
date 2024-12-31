@@ -15,12 +15,12 @@ module pt_tb();
 		$display("Running testbench for pt module.");
 		clk = 0;
 		#1 state = 2'b00;
-		#1 cb_ld = 0;
+		#2 cb_ld = 0;
 		#64 state = 2'b01;
 		#64 state = 2'b10;
 		#64 state = 2'b00;
 		#128 sb_rst = 0; 
-		#512 $finish;
+		#1024 $finish;
 	end
 
 	always begin
