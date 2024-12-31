@@ -1,7 +1,8 @@
 module cb_gen(
 	input clk,
 	input [1:0] state,
-	output q
+	output q,
+	output done
 );
 	reg [31:0] zero = 32'b11110000000000001111000000000000;
 	reg [31:0] one = 32'b11111111111100001111111111110000;
@@ -10,6 +11,7 @@ module cb_gen(
 	reg [4:0] ctr = 0;
 	reg [31:0] mux;
 	assign q = mux[ctr];
+	assign done = (ctr == 5'b00000);
 
 	always @(state) begin
 		case (state)
@@ -39,4 +41,34 @@ module sb_gen(
 		else
 			ctr <= ctr + 1;
 	end
+endmodule
+
+module pt_enc(
+	input clk,
+	input ld,
+	input [23:0] ad,
+	output q
+);
+	reg [23:0] tmp = 0;
+	reg [1:0] codebit = 0;
+	wire cb_done;
+
+	always @(posedge clk) begin
+		if (ld)
+			tmp <= ad;
+		else
+			codebit <= tmp[23:22];
+	end
+
+	always @(negedge clk) begin
+		if (cb_done)
+			tmp <= {tmp[21:0], 2'b00};
+	end
+
+	cb_gen c0 (
+		.clk(clk),
+		.state(codebit),
+		.q(q),
+		.done(cb_done)
+	);
 endmodule
