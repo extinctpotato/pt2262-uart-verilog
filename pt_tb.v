@@ -42,7 +42,7 @@ module pt_tb();
 	pt_enc pt (
 		.clk(clk),
 		.ld(cb_ld),
-		.ad(24'b000100000001010101001010),
+		.ad(24'b101010101010101000000001),
 		.q(q3)
 	);
 endmodule
