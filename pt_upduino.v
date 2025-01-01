@@ -1,42 +1,15 @@
 `include "pt.v"
 
-// Taken from https://github.com/vlsicad/clock-divide-by-n
-// Will be removed once it is no longer necessary.
-module clk_div_n #(
-	parameter WIDTH = 7)
-
-	(clk,reset,div_num, clk_out);
-
-	input clk;
-	input reset; 
-	input [WIDTH-1:0] div_num;
-	output clk_out;
-
-	reg [WIDTH-1:0] pos_count, neg_count;
-	wire [WIDTH-1:0] r_nxt;
-
-	always @(posedge clk)
-		if (reset)
-			pos_count <=0;
-		else if (pos_count ==div_num-1) pos_count <= 0;
-		else pos_count<= pos_count +1;
-
-	always @(negedge clk)
-		if (reset)
-			neg_count <=0;
-		else  if (neg_count ==div_num-1) neg_count <= 0;
-		else neg_count<= neg_count +1; 
-
-	assign clk_out = ((pos_count > (div_num>>1)) | (neg_count > (div_num>>1))); 
-endmodule
-
 module top(
 	output led_r,
 	output led_g,
-	output led_b
+	output led_b,
+	output gpio_23
 );
 	assign led_g = 1;
-	
+	assign led_r = 1;
+	reg cb_ld = 1;
+
 	wire clk_10khz;
 	SB_LFOSC u_lfosc (
 		.CLKLFPU(1'b1),
@@ -44,22 +17,23 @@ module top(
 		.CLKLF(clk_10khz)
 	);
 
-	wire clk_div;
-
-	clk_div_n #( .WIDTH(16)) clk0 (
-		.clk(clk_10khz),
-		.reset(1'b0),
-		.div_num(4056),
-		.clk_out(clk_div)
-	);
-
 	wire out;
-	assign led_r = ~out;
-	assign led_b = ~clk_div;
+	wire done;
+	assign gpio_23 = out;
+	assign led_b = done;
 
-	cb_gen c0 (
-		.clk(clk_div),
-		.state(2'b10),
-		.q(out)
+	always @(posedge clk_10khz) begin
+		if (done)
+			cb_ld = 1;
+		else
+			cb_ld = 0;
+	end
+
+	pt_enc pt (
+		.clk(clk_10khz),
+		.ld(cb_ld),
+		.ad(24'b101010101010101000000001),
+		.q(out),
+		.done(done)
 	);
 endmodule
