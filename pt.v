@@ -13,7 +13,6 @@ module cb_gen(
 	reg [4:0] ctr = 0;
 	reg [31:0] mux;
 	assign q = mux[ctr] && ~rst;
-	assign done = (ctr == 5'b00000 && rst == 0);
 
 	always @(posedge clk) begin
 		case (state)
@@ -39,7 +38,6 @@ module sb_gen(
 	reg [6:0] ctr = 127;
 	wire drive_high = (ctr < 4);
 	assign q = drive_high;
-	assign done = (ctr == 127 && rst == 0);
 
 	always @(posedge clk)
 	begin
@@ -60,16 +58,13 @@ module pt_enc(
 	reg [23:0] tmp;
 	reg [9:0] txed = 512;
 	wire [1:0] codebit = tmp[23:22];
-	wire cb_done;
-	wire sb_done;
 	assign done = (txed == 512); 
 
 	wire q_cb;
 	wire q_sb;
 	assign q = q_cb || q_sb;
 
-	wire gen_done = cb_done || sb_done;
-	wire cb_rst_rq = (txed[4:0] == 0 && txed[9:5] > 0 && txed < 384);
+	wire load_next_cb = (txed[4:0] == 0 && txed[9:5] > 0 && txed < 384);
 
 	always @(posedge clk) begin
 		if (ld) begin
@@ -78,23 +73,21 @@ module pt_enc(
 		end else begin
 			if (txed < 512)
 				txed <= txed + 1;
-			if (cb_rst_rq)
+			if (load_next_cb)
 				tmp <= {tmp[21:0], 2'b00};
 		end
 	end
 
 	cb_gen c0 (
 		.clk(clk),
-		.rst(txed == 0 || txed > 384 || cb_rst_rq),
+		.rst(txed == 0 || txed > 384 || load_next_cb),
 		.state(codebit),
-		.q(q_cb),
-		.done(cb_done)
+		.q(q_cb)
 	);
 
 	sb_gen s0 (
 		.clk(clk),
 		.rst(txed < 384 || txed > 511),
-		.q(q_sb),
-		.done(sb_done)
+		.q(q_sb)
 	);
 endmodule
