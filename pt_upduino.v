@@ -29,10 +29,13 @@ module top(
 			cb_ld = 0;
 	end
 
+	reg [23:0] ad = 24'b101010101010101000000001;
+	//reg [23:0] ad = 0;
+
 	pt_enc pt (
 		.clk(clk_10khz),
 		.ld(cb_ld),
-		.ad(24'b101010101010101000000001),
+		.ad(ad),
 		.q(out),
 		.done(done)
 	);
