@@ -16,14 +16,15 @@ module cb_gen(
 	assign done = (ctr == 5'b00000 && rst == 0);
 
 	always @(posedge clk) begin
+		case (state)
+			2'b00 : mux <= zero;
+			2'b01 : mux <= one;
+			2'b10 : mux <= hi_z;
+			default: mux <= def; 
+		endcase
+
 		if (rst) begin
 			ctr <= 31;
-			case (state)
-				2'b00 : mux <= zero;
-				2'b01 : mux <= one;
-				2'b10 : mux <= hi_z;
-				default: mux <= def; 
-			endcase
 		end else
 			ctr <= ctr - 1;
 	end
@@ -68,22 +69,23 @@ module pt_enc(
 	assign q = q_cb || q_sb;
 
 	wire gen_done = cb_done || sb_done;
+	wire cb_rst_rq = (txed[4:0] == 0 && txed[9:5] > 0 && txed < 384);
 
 	always @(posedge clk) begin
 		if (ld) begin
 			tmp <= ad;
 			txed <= 0;
 		end else begin
-			if (gen_done)
-				tmp <= {tmp[21:0], 2'b00};
 			if (txed < 512)
 				txed <= txed + 1;
+			if (cb_rst_rq)
+				tmp <= {tmp[21:0], 2'b00};
 		end
 	end
 
 	cb_gen c0 (
 		.clk(clk),
-		.rst(txed == 0 || txed > 384),
+		.rst(txed == 0 || txed > 384 || cb_rst_rq),
 		.state(codebit),
 		.q(q_cb),
 		.done(cb_done)
