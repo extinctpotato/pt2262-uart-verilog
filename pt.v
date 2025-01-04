@@ -91,3 +91,26 @@ module pt_enc(
 		.q(q_sb)
 	);
 endmodule
+
+module pipo_8_to_24(
+	input clk,
+	input ready,
+	input [7:0] pi, 
+	output reg [23:0] po,
+	output reg ld
+);
+	reg [1:0] ctr = 0;
+
+	always @(posedge clk) begin
+		if (ctr == 3) begin
+			ctr <= 0;
+			ld <= 1;
+		end else begin
+			if (ready) begin
+				po <= {po[15:0], pi};
+				ctr <= ctr + 1;
+			end
+			ld <= 0;
+		end
+	end
+endmodule
