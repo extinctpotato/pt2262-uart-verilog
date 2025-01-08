@@ -4,20 +4,23 @@
 
 module pt_tb();
 	reg clk;
-	reg uart_in;
 	reg uart_reset = 1;
+
+	// UART RX
+	wire uart_rx_valid;
+	wire [7:0] uart_rx_out;
+	wire uart_rx_in;
+
+	// UART TX
+	wire uart_tx_ready;
 	reg uart_tx_valid;
 	reg [7:0] uart_tx_in;
-	reg [7:0] uart_out;
-	wire [23:0] ad;
-	wire q;
-	wire done;
-	wire cb_ld;
-	wire uart_valid;
-	wire uart_tx_out;
-	wire uart_tx_ready;
-	wire uart_rx_in;
-	wire [7:0] uart_rx_out;
+
+	// Encoder signals
+	wire [23:0] encoder_payload;
+	wire encoder_load;
+	wire encoder_out;
+	wire encoder_done;
 
 	initial begin
 		$dumpfile("pt.vcd");
@@ -56,24 +59,24 @@ module pt_tb();
 		.reset(uart_reset),
 		.enable(1'b1),
 		.in(uart_rx_in),
-		.ready(done),
+		.ready(encoder_done),
 		.out(uart_rx_out),
-		.valid(uart_valid)
+		.valid(uart_rx_valid)
 	);
 
 	pipo_8_to_24 p0(
 		.clk(clk),
-		.ready(uart_valid),
+		.ready(uart_rx_valid),
 		.pi(uart_rx_out),
-		.po(ad),
-		.ld(cb_ld)
+		.po(encoder_payload),
+		.ld(encoder_load)
 	);
 
 	pt_enc pt (
 		.clk(clk),
-		.ld(cb_ld),
-		.ad(ad),
-		.q(q),
-		.done(done)
+		.ld(encoder_load),
+		.ad(encoder_payload),
+		.q(encoder_out),
+		.done(encoder_done)
 	);
 endmodule
