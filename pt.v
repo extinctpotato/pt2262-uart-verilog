@@ -100,6 +100,7 @@ module pipo_8_to_24(
 	output reg ld
 );
 	reg [1:0] ctr = 0;
+	reg ready_once = 0;
 
 	always @(posedge clk) begin
 		if (ctr == 3) begin
@@ -107,9 +108,13 @@ module pipo_8_to_24(
 			ld <= 1;
 		end else begin
 			if (ready) begin
-				po <= {po[15:0], pi};
-				ctr <= ctr + 1;
-			end
+				if (~ready_once) begin
+					po <= {po[15:0], pi};
+					ctr <= ctr + 1;
+					ready_once <= 1;
+				end
+			end else
+				ready_once <= 0;
 			ld <= 0;
 		end
 	end
