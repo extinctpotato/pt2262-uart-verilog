@@ -1,15 +1,13 @@
 `include "pt.v"
+`include "verilog-uart/uart/UARTReceiver.v"
 
 module top(
+	input gpio_25,
 	output led_r,
 	output led_g,
 	output led_b,
 	output gpio_23
 );
-	assign led_g = 1;
-	assign led_r = 1;
-	reg cb_ld = 1;
-
 	wire clk_10khz;
 	SB_LFOSC u_lfosc (
 		.CLKLFPU(1'b1),
@@ -17,26 +15,56 @@ module top(
 		.CLKLF(clk_10khz)
 	);
 
-	wire out;
-	wire done;
-	assign gpio_23 = out;
-	assign led_b = done;
+	// UART RX
+	wire uart_rx_valid;
+	wire uart_rx_error;
+	wire uart_rx_overrun;
+	wire [7:0] uart_rx_out;
+	wire uart_rx_in;
+	reg uart_reset = 1;
+
+	// Encoder signals
+	wire [23:0] encoder_payload;
+	wire encoder_load;
+	wire encoder_out;
+	wire encoder_done;
+
+	// Physical mappings
+	assign gpio_23 = encoder_out;
+	assign led_r = ~(uart_rx_error || uart_rx_overrun);
+	assign led_g = gpio_25;
+	assign led_b = encoder_done;
+	assign uart_rx_in = gpio_25;
 
 	always @(posedge clk_10khz) begin
-		if (done)
-			cb_ld = 1;
-		else
-			cb_ld = 0;
+		uart_reset <= 0;
 	end
 
-	reg [23:0] ad = 24'b101010101010101000000001;
-	//reg [23:0] ad = 0;
+	UARTReceiver #(.CLOCK_RATE(10000), .BAUD_RATE(300)) u_rx(
+		.clk(clk_10khz),
+		.reset(uart_reset),
+		.enable(1'b1),
+		.in(uart_rx_in),
+		.ready(encoder_done),
+		.out(uart_rx_out),
+		.valid(uart_rx_valid),
+		.error(uart_rx_error),
+		.overrun(uart_rx_overrun)
+	);
+
+	pipo_8_to_24 p0(
+		.clk(clk_10khz),
+		.ready(uart_rx_valid),
+		.pi(uart_rx_out),
+		.po(encoder_payload),
+		.ld(encoder_load)
+	);
 
 	pt_enc pt (
 		.clk(clk_10khz),
-		.ld(cb_ld),
-		.ad(ad),
-		.q(out),
-		.done(done)
+		.ld(encoder_load),
+		.ad(encoder_payload),
+		.q(encoder_out),
+		.done(encoder_done)
 	);
 endmodule
