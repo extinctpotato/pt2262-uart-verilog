@@ -31,13 +31,18 @@ module top(
 
 	// Physical mappings
 	assign gpio_23 = encoder_out;
-	assign led_r = ~(uart_rx_error || uart_rx_overrun);
-	assign led_g = gpio_25;
-	assign led_b = encoder_done;
+	assign led_r = ~(uart_rx_error || uart_rx_overrun || uart_reset);
+	assign led_g = encoder_done;
+	assign led_b = ~uart_rx_valid;
 	assign uart_rx_in = gpio_25;
 
+	reg [1:0] ctr = 0;
+
 	always @(posedge clk_10khz) begin
-		uart_reset <= 0;
+		if (ctr < 3)
+			ctr <= ctr + 1;
+		else
+			uart_reset <= 0;
 	end
 
 	UARTReceiver #(.CLOCK_RATE(10000), .BAUD_RATE(300)) u_rx(
