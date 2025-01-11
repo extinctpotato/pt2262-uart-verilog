@@ -24,7 +24,7 @@ module pt_tb();
 
 	initial begin
 		$dumpfile("pt.vcd");
-		$dumpvars(0, pt, p0, u_rx, u_tx);
+		$dumpvars(0, pt, p0, u_rx, u_tx, pt_tb);
 		$display("Running testbench for pt module.");
 		clk = 0;
 		#2 uart_reset = 0;
@@ -37,11 +37,33 @@ module pt_tb();
 		#1102 uart_tx_in = 8'b10101010;
 		#2 uart_tx_valid = 1;
 		#2 uart_tx_valid = 0;
-		#2056 $finish;
+		#40000 $finish;
 	end
 
 	always begin
 		#1 clk = !clk;
+	end
+
+	reg encoder_load_latch = 0;
+	reg encoder_load_latch2 = 0;
+	reg [3:0] encoder_load_ctr = 0;
+
+	always @(posedge clk) begin
+		if (encoder_load)
+			encoder_load_latch2 <= 1;
+		else if (encoder_load_latch2) begin
+			if (encoder_load_ctr < 15) begin
+				if (encoder_done) begin
+					encoder_load_latch <= 1;
+					encoder_load_ctr <= encoder_load_ctr + 1;
+				end else
+					encoder_load_latch <= 0;
+			end else begin
+				encoder_load_ctr <= 0;
+				encoder_load_latch <= 0;
+				encoder_load_latch2 <= 0;
+			end
+		end
 	end
 
 	UARTTransmitter #(.CLOCK_RATE(10000), .BAUD_RATE(300)) u_tx(
@@ -74,7 +96,7 @@ module pt_tb();
 
 	pt_enc pt (
 		.clk(clk),
-		.ld(encoder_load),
+		.ld(encoder_load_latch),
 		.ad(encoder_payload),
 		.q(encoder_out),
 		.done(encoder_done)

@@ -1,6 +1,23 @@
 `include "pt.v"
 `include "verilog-uart/uart/UARTReceiver.v"
 
+// Taken from https://www.fpga4fun.com/CrossClockDomain2.html
+module Flag_CrossDomain(
+	input clkA,
+	input FlagIn_clkA,   // this is a one-clock pulse from the clkA domain
+	input clkB,
+	output FlagOut_clkB   // from which we generate a one-clock pulse in clkB domain
+);
+
+	reg FlagToggle_clkA;
+	always @(posedge clkA) FlagToggle_clkA <= FlagToggle_clkA ^ FlagIn_clkA;  // when flag is asserted, this signal toggles (clkA domain)
+
+	reg [2:0] SyncA_clkB;
+	always @(posedge clkB) SyncA_clkB <= {SyncA_clkB[1:0], FlagToggle_clkA};  // now we cross the clock domains
+
+	assign FlagOut_clkB = (SyncA_clkB[2] ^ SyncA_clkB[1]);  // and create the clkB flag
+endmodule
+
 module top(
 	input gpio_25,
 	output led_r,
@@ -15,8 +32,16 @@ module top(
 		.CLKLF(clk_10khz)
 	);
 
+	wire clk_48mhz;
+	SB_HFOSC u_hfosc (
+		.CLKHFPU(1'b1),
+		.CLKHFEN(1'b1),
+		.CLKHF(clk_48mhz)
+	);
+
 	// UART RX
 	wire uart_rx_valid;
+	wire uart_rx_valid_sync;
 	wire uart_rx_error;
 	wire uart_rx_overrun;
 	wire [7:0] uart_rx_out;
@@ -31,22 +56,44 @@ module top(
 
 	// Physical mappings
 	assign gpio_23 = encoder_out;
-	assign led_r = ~(uart_rx_error || uart_rx_overrun || uart_reset);
+	assign led_r = ~uart_rx_error;
 	assign led_g = encoder_done;
-	assign led_b = ~uart_rx_valid;
+	assign led_b = ~uart_rx_valid_sync;
 	assign uart_rx_in = gpio_25;
 
 	reg [1:0] ctr = 0;
 
-	always @(posedge clk_10khz) begin
+	always @(posedge clk_48mhz) begin
 		if (ctr < 3)
 			ctr <= ctr + 1;
 		else
 			uart_reset <= 0;
 	end
 
-	UARTReceiver #(.CLOCK_RATE(10000), .BAUD_RATE(300)) u_rx(
-		.clk(clk_10khz),
+	reg encoder_load_latch = 0;
+	reg encoder_load_latch2 = 0;
+	reg [3:0] encoder_load_ctr = 0;
+
+	always @(posedge clk_10khz) begin
+		if (encoder_load)
+			encoder_load_latch2 <= 1;
+		else if (encoder_load_latch2) begin
+			if (encoder_load_ctr < 15) begin
+				if (encoder_done) begin
+					encoder_load_latch <= 1;
+					encoder_load_ctr <= encoder_load_ctr + 1;
+				end else
+					encoder_load_latch <= 0;
+			end else begin
+				encoder_load_ctr <= 0;
+				encoder_load_latch <= 0;
+				encoder_load_latch2 <= 0;
+			end
+		end
+	end
+
+	UARTReceiver #(.CLOCK_RATE(48000000), .BAUD_RATE(9600)) u_rx(
+		.clk(clk_48mhz),
 		.reset(uart_reset),
 		.enable(1'b1),
 		.in(uart_rx_in),
@@ -57,9 +104,16 @@ module top(
 		.overrun(uart_rx_overrun)
 	);
 
+	Flag_CrossDomain fcdc(
+		.clkA(clk_48mhz),
+		.FlagIn_clkA(uart_rx_valid),
+		.clkB(clk_10khz),
+		.FlagOut_clkB(uart_rx_valid_sync)
+	);
+
 	pipo_8_to_24 p0(
 		.clk(clk_10khz),
-		.ready(uart_rx_valid),
+		.ready(uart_rx_valid_sync),
 		.pi(uart_rx_out),
 		.po(encoder_payload),
 		.ld(encoder_load)
@@ -67,7 +121,7 @@ module top(
 
 	pt_enc pt (
 		.clk(clk_10khz),
-		.ld(encoder_load),
+		.ld(encoder_load_latch),
 		.ad(encoder_payload),
 		.q(encoder_out),
 		.done(encoder_done)
