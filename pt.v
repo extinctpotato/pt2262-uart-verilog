@@ -5,21 +5,16 @@ module cb_gen(
 	output q,
 	output done
 );
-	reg [31:0] zero = 32'b11110000000000001111000000000000;
-	reg [31:0] one = 32'b11111111111100001111111111110000;
-	reg [31:0] hi_z = 32'b11110000000000001111111111110000;
-	reg [31:0] def = 0; 
-
 	reg [4:0] ctr = 0;
 	reg [31:0] mux;
 	assign q = mux[ctr] && ~rst;
 
 	always @(posedge clk) begin
 		case (state)
-			2'b00 : mux <= zero;
-			2'b01 : mux <= one;
-			2'b10 : mux <= hi_z;
-			default: mux <= def; 
+			2'b00 : mux <= 32'b11110000000000001111000000000000; 
+			2'b01 : mux <= 32'b11111111111100001111111111110000;
+			2'b10 : mux <= 32'b11110000000000001111111111110000;
+			default: mux <= 0; 
 		endcase
 
 		if (rst) begin
