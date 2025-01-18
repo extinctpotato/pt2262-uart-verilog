@@ -14,7 +14,7 @@ module cb_gen(
 			2'b00 : mux <= 32'b11110000000000001111000000000000; 
 			2'b01 : mux <= 32'b11111111111100001111111111110000;
 			2'b10 : mux <= 32'b11110000000000001111111111110000;
-			default: mux <= 0; 
+			default: mux <= 32'b10000000000000000000000000000000;
 		endcase
 
 		if (rst) begin
@@ -45,15 +45,15 @@ endmodule
 
 module pt_enc(
 	input clk,
-	input ld,
+	input rst,
 	input [23:0] ad,
 	output q,
 	output done
 );
 	reg [23:0] tmp;
-	reg [9:0] txed = 512;
+	reg [9:0] txed = 511;
 	wire [1:0] codebit = tmp[23:22];
-	assign done = (txed == 512); 
+	assign done = (txed == 511); 
 
 	wire q_cb;
 	wire q_sb;
@@ -62,12 +62,15 @@ module pt_enc(
 	wire load_next_cb = (txed[4:0] == 0 && txed[9:5] > 0 && txed < 384);
 
 	always @(posedge clk) begin
-		if (ld) begin
-			tmp <= ad;
-			txed <= 0;
+		if (rst) begin
+			txed <= 511;
 		end else begin
-			if (txed < 512)
+			if (txed == 511) begin
+				tmp <= ad;
+				txed <= 0;
+			end else
 				txed <= txed + 1;
+
 			if (load_next_cb)
 				tmp <= {tmp[21:0], 2'b00};
 		end
@@ -75,14 +78,14 @@ module pt_enc(
 
 	cb_gen c0 (
 		.clk(clk),
-		.rst(txed == 0 || txed > 384 || load_next_cb),
+		.rst(txed == 511 || txed > 383 || rst),
 		.state(codebit),
 		.q(q_cb)
 	);
 
 	sb_gen s0 (
 		.clk(clk),
-		.rst(txed < 384 || txed > 511),
+		.rst(txed < 383 || txed > 510),
 		.q(q_sb)
 	);
 endmodule

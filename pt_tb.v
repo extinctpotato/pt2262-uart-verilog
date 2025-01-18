@@ -44,24 +44,19 @@ module pt_tb();
 		#1 clk = !clk;
 	end
 
-	reg encoder_load_latch = 0;
 	reg encoder_load_latch2 = 0;
 	reg [3:0] encoder_load_ctr = 0;
 
 	always @(posedge clk) begin
-		if (encoder_load)
+		if (encoder_load) begin
 			encoder_load_latch2 <= 1;
-		else if (encoder_load_latch2) begin
-			if (encoder_load_ctr < 15) begin
-				if (encoder_done) begin
-					encoder_load_latch <= 1;
+			encoder_load_ctr <= 0;
+		end else if (encoder_load_latch2) begin
+			if (encoder_done) begin
+				if (encoder_load_ctr < 15)
 					encoder_load_ctr <= encoder_load_ctr + 1;
-				end else
-					encoder_load_latch <= 0;
-			end else begin
-				encoder_load_ctr <= 0;
-				encoder_load_latch <= 0;
-				encoder_load_latch2 <= 0;
+				else
+					encoder_load_latch2 <= 0;
 			end
 		end
 	end
@@ -96,7 +91,7 @@ module pt_tb();
 
 	pt_enc pt (
 		.clk(clk),
-		.ld(encoder_load_latch),
+		.rst(~encoder_load_latch2),
 		.ad(encoder_payload),
 		.q(encoder_out),
 		.done(encoder_done)
