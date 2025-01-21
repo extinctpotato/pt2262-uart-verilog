@@ -79,7 +79,7 @@ module top(
 			encoder_load_ctr <= 0;
 		end else if (encoder_load_latch2) begin
 			if (encoder_done) begin
-				if (encoder_load_ctr < 15)
+				if (encoder_load_ctr < 6)
 					encoder_load_ctr <= encoder_load_ctr + 1;
 				else
 					encoder_load_latch2 <= 0;
