@@ -23,7 +23,7 @@ module top(
 	output led_r,
 	output led_g,
 	output led_b,
-	output gpio_23
+	output gpio_46
 );
 	wire clk_10khz;
 	SB_LFOSC u_lfosc (
@@ -55,7 +55,7 @@ module top(
 	wire encoder_done;
 
 	// Physical mappings
-	assign gpio_23 = encoder_out;
+	assign gpio_46 = encoder_out;
 	assign led_r = ~uart_rx_error;
 	assign led_g = encoder_done;
 	assign led_b = ~uart_rx_valid_sync;
