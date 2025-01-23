@@ -6,7 +6,7 @@ import pathlib
 import paho.mqtt.subscribe as paho_subscribe
 from typing import Callable, Any
 
-def bin_list_to_string(message_lst):
+def bin_list_to_string(message_lst: str) -> bytearray:
     def __chunks(lst, n):
         """Yield successive n-sized chunks from lst."""
         for i in range(0, len(lst), n):
@@ -19,17 +19,17 @@ def bin_list_to_string(message_lst):
 
     return s
 
-def states_to_bin(states_lst):
+def states_to_bin(states_lst: str) -> str:
     return "".join(
             ["01" if x == "1" else "00" if x == "0" else "10" if x == "f" else None for x in states_lst]
             )
 
-def tx_states(serial_port, states):
+def tx_states(serial_port: str, states: str):
     msg = bin_list_to_string(states_to_bin(states))
     with serial.Serial(serial_port, 9600) as ser:
         ser.write(msg)
 
-def on_mqtt_message(serial_port) -> Callable[[Any], None]:
+def on_mqtt_message(serial_port: str) -> Callable[[Any], None]:
     def __callback(client, _, msg):
         tx_states(serial_port, msg.payload.decode())
 
